@@ -1,4 +1,4 @@
-package api
+package grpc
 
 import (
 	context "context"
@@ -8,7 +8,7 @@ import (
 	"github.com/ubombi/timeseries/storage"
 )
 
-var emptyResp = empty.Empty{}
+var emptyResp = &empty.Empty{}
 
 type Server struct {
 	Storage storage.Interface
@@ -20,9 +20,15 @@ func (s *Server) StoreEvent(ctx context.Context, e *Event) (*empty.Empty, error)
 		Ts:     e.Ts,
 		Params: MapFromProtoStruct(e.Params),
 	})
-	return &emptyResp, err
+	return emptyResp, err
 }
+
+// StreamEvents stores events from a stream
 func (s *Server) StreamEvents(stream EventService_StreamEventsServer) error {
+	// Close stream in case of error or connection lost
+	// Opened stream blocks shutdown process
+	defer stream.SendAndClose(emptyResp)
+
 	for {
 		e, err := stream.Recv()
 

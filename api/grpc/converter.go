@@ -1,4 +1,4 @@
-package api
+package grpc
 
 import (
 	pstruct "github.com/golang/protobuf/ptypes/struct"
