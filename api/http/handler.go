@@ -22,6 +22,11 @@ func (s *Service) HandlerFunc(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	if e.EventType == "" || e.Ts == 0 {
+		ctx.Response.SetStatusCode(400)
+		return
+	}
+
 	// TODO: validation here
 	err := s.Storage.Store(storage.Event{
 		Type:   e.EventType,
