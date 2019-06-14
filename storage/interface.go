@@ -11,3 +11,7 @@ type Event struct {
 type Interface interface {
 	Store(Event) error
 }
+
+type Graceful interface {
+	Shutdown()
+}
