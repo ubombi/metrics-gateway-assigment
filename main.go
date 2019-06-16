@@ -114,7 +114,10 @@ func initStorage(ctx context.Context, wg *sync.WaitGroup) storage.Interface {
 		chstorage := clickhouse.NewStorage(ctx)
 		go func() {
 			defer wg.Done()
-			chstorage.Start()
+			if err := chstorage.Start(); err != nil {
+				log.Fatal(err)
+			}
+			log.Print("storage off")
 		}()
 		return chstorage
 	case "dummy":

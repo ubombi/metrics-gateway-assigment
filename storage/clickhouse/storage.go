@@ -46,16 +46,21 @@ type Storage struct {
 	wg      sync.WaitGroup
 	ctx     context.Context
 	cancel  context.CancelFunc
-	db      *sql.DB // TODO: implement actual clickhouse dao
+	db      *sql.DB
 	input   chan storage.Event
 	workers int
 	errors  chan error
 }
 
-// Sgutdown stops receiving events to store, inserts existing quque and exits gracefuly.
+// Shutdown stops receiving events to store, inserts existing quque and exits gracefuly.
 func (s *Storage) Shutdown() {
+	select {
+	case <-s.ctx.Done():
+		return
+	default:
+	}
+
 	s.cancel()
-	close(s.input)
 	s.wg.Wait()
 }
 
@@ -66,40 +71,60 @@ func (s *Storage) Store(e storage.Event) error {
 		return errors.New("storage is shutted down")
 	default:
 	}
-
 	s.input <- e
 	return nil
 }
 
 // Start workers. Blocka untill shutdown is called.
-func (s *Storage) Start() {
+func (s *Storage) Start() error {
 	s.wg.Add(s.workers)
+	defer s.wg.Wait()
 
 	go func() {
-		e := <-s.errors
-		log.Fatal(e)
+		<-s.ctx.Done()
+		close(s.input)
 	}()
 
 	for i := 0; i < s.workers; i++ {
 		go s.work()
 	}
-	s.wg.Wait()
-}
 
-func (s *Storage) checkErr(err error) {
-	if err != nil {
-		s.errors <- err
+	for {
+		select {
+		case <-s.ctx.Done():
+			return nil
+		case e := <-s.errors:
+			// Some kind of errors can be handled here and/or ignored with continue
+
+			s.Shutdown()
+			return e
+		}
 	}
 }
 
+// checkErr is a helper function that redirect errors to errors chanel. After context cancelation errors are ignored to avoid deadlocks
+func (s *Storage) checkErr(err error) {
+	if err == nil {
+		return
+	}
+	select {
+	case <-s.ctx.Done():
+	case s.errors <- err:
+	}
+}
+
+// work serialize and send events from input quque with own chickhouse connection and commit them with defined intervals
 func (s *Storage) work() {
 	defer s.wg.Done()
+	defer log.Print("worker done")
 
 	tx, stmt, err := makeInsert(s.db)
 	s.checkErr(err)
 	defer tx.Commit()
 
 	commitTicker := time.NewTicker(*CommitInterval)
+	defer commitTicker.Stop()
+
 	uncomitted := 0
 	for {
 		select {
@@ -116,6 +141,7 @@ func (s *Storage) work() {
 				// exit ony after input quque is drained
 				return
 			}
+
 			e := convertToInternal(Event)
 			err = execEventInsert(stmt, &e)
 			s.checkErr(err)
@@ -125,6 +151,7 @@ func (s *Storage) work() {
 	}
 }
 
+// execEventInsert wraps exec query to make select in `work` more readable
 func execEventInsert(stmt *sql.Stmt, e *event) (err error) {
 	_, err = stmt.Exec(
 		e.EventType,

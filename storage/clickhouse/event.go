@@ -22,6 +22,7 @@ type event struct {
 	UID uuid.UUID
 }
 
+// convertToInternal converts Event to internal representation that can be used in clickhouse queries. Depends on actual table schema.
 func convertToInternal(se storage.Event) (e event) {
 	e.EventType = se.Type
 	e.Ts = se.Ts
