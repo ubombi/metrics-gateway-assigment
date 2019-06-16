@@ -1,0 +1,38 @@
+version: '3.7'
+
+services:
+  clickhouse:
+    image: yandex/clickhouse-server:latest
+    restart: always
+    networks:
+      - backend
+    expose:
+      - 9000
+      - 8123
+    ulimits:
+      nofile:
+        soft: "262144"
+        hard: "262144"
+    #volumes:
+      #- "./clickhouse_data:/path/to/clichouse/data/folder"
+
+  backend:
+    image: timeseries:latest
+    build: .
+    restart: always
+    ports:
+      - "8008:8008"
+      - "8088:8088"
+    links:
+      - clickhouse
+    depends_on:
+      - clickhouse
+    networks:
+      - backend
+    entrypoint:
+    - server
+    - "-clickhouseDSN=native://clickhouse:9000?block_size=100000"
+
+networks:
+  backend:
+    driver: bridge
