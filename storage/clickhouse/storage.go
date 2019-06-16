@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/ubombi/timeseries/storage"
+	"github.com/ubombi/timeseries/api"
 
 	_ "github.com/kshvakov/clickhouse"
 )
@@ -26,7 +26,7 @@ func NewStorage(ctx context.Context) *Storage {
 
 	s := Storage{}
 	s.ctx, s.cancel = context.WithCancel(ctx)
-	s.input = make(chan storage.Event, 10000)
+	s.input = make(chan api.Event, 10000)
 
 	s.db, err = connect(*DSN)
 	if err != nil {
@@ -47,7 +47,7 @@ type Storage struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	db      *sql.DB
-	input   chan storage.Event
+	input   chan api.Event
 	workers int
 	errors  chan error
 }
@@ -65,7 +65,7 @@ func (s *Storage) Shutdown() {
 }
 
 // Store enquque event to be processed by workers. Returns error if called after Shutdown
-func (s *Storage) Store(e storage.Event) error {
+func (s *Storage) Store(e api.Event) error {
 	select {
 	case <-s.ctx.Done():
 		return errors.New("storage is shutted down")

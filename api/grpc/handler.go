@@ -5,17 +5,17 @@ import (
 	"io"
 
 	empty "github.com/golang/protobuf/ptypes/empty"
-	"github.com/ubombi/timeseries/storage"
+	"github.com/ubombi/timeseries/api"
 )
 
 var emptyResp = &empty.Empty{}
 
 type Server struct {
-	Storage storage.Interface
+	Storage api.Storage
 }
 
 func (s *Server) StoreEvent(ctx context.Context, e *Event) (*empty.Empty, error) {
-	err := s.Storage.Store(storage.Event{
+	err := s.Storage.Store(api.Event{
 		Type:   e.EventType,
 		Ts:     e.Ts,
 		Params: MapFromProtoStruct(e.Params),
@@ -38,7 +38,7 @@ func (s *Server) StreamEvents(stream EventService_StreamEventsServer) error {
 		if err != nil {
 			return err
 		}
-		err = s.Storage.Store(storage.Event{
+		err = s.Storage.Store(api.Event{
 			Type:   e.EventType,
 			Ts:     e.Ts,
 			Params: MapFromProtoStruct(e.Params),

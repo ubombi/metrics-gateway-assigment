@@ -1,4 +1,4 @@
-package storage
+package api
 
 type UnixTimestamp = int64
 
@@ -8,10 +8,6 @@ type Event struct {
 	Params map[string]interface{}
 }
 
-type Interface interface {
+type Storage interface {
 	Store(Event) error
-}
-
-type Graceful interface {
-	Shutdown()
 }

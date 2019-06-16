@@ -10,9 +10,9 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/ubombi/timeseries/api"
 	grpcapi "github.com/ubombi/timeseries/api/grpc"
 	httpapi "github.com/ubombi/timeseries/api/http"
-	"github.com/ubombi/timeseries/storage"
 
 	"github.com/ubombi/timeseries/storage/clickhouse"
 	"github.com/ubombi/timeseries/storage/dummy"
@@ -45,7 +45,7 @@ func main() {
 	log.Print("received shutdown signal")
 	go cancel()
 	go GRPCServer.GracefulStop()
-	if graceful, ok := Storage.(storage.Graceful); ok {
+	if graceful, ok := Storage.(Graceful); ok {
 		graceful.Shutdown()
 	}
 	go func() {
@@ -61,7 +61,7 @@ func WaitForSigterm() os.Signal {
 	return <-ch
 }
 
-func initGRPC(ctx context.Context, wg *sync.WaitGroup, storage storage.Interface) (server *grpc.Server) {
+func initGRPC(ctx context.Context, wg *sync.WaitGroup, storage api.Storage) (server *grpc.Server) {
 	lis, err := net.Listen("tcp", *grpcListenAddr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -89,7 +89,7 @@ func initGRPC(ctx context.Context, wg *sync.WaitGroup, storage storage.Interface
 	return server
 }
 
-func initHTTP(ctx context.Context, wg *sync.WaitGroup, storage storage.Interface) *fasthttp.Server {
+func initHTTP(ctx context.Context, wg *sync.WaitGroup, storage api.Storage) *fasthttp.Server {
 	service := httpapi.Service{Storage: storage}
 
 	s := &fasthttp.Server{
@@ -108,7 +108,7 @@ func initHTTP(ctx context.Context, wg *sync.WaitGroup, storage storage.Interface
 	return s
 }
 
-func initStorage(ctx context.Context, wg *sync.WaitGroup) storage.Interface {
+func initStorage(ctx context.Context, wg *sync.WaitGroup) api.Storage {
 	switch *storageName {
 	case "clickhouse":
 		chstorage := clickhouse.NewStorage(ctx)
@@ -127,4 +127,8 @@ func initStorage(ctx context.Context, wg *sync.WaitGroup) storage.Interface {
 		log.Fatal("unsupported storage ", *storageName)
 	}
 	return nil
+}
+
+type Graceful interface {
+	Shutdown()
 }

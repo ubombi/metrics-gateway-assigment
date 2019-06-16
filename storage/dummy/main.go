@@ -5,18 +5,18 @@ import (
 	"io"
 	"os"
 
-	"github.com/ubombi/timeseries/storage"
+	"github.com/ubombi/timeseries/api"
 )
 
 type Storage struct {
 	Output io.Writer
 }
 
-var Stdout storage.Interface = &Storage{
+var Stdout = &Storage{
 	Output: os.Stdout,
 }
 
-func (s *Storage) Store(e storage.Event) error {
+func (s *Storage) Store(e api.Event) error {
 	fmt.Println(e)
 	return nil
 }

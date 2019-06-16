@@ -2,10 +2,10 @@ package clickhouse
 
 import (
 	uuid "github.com/satori/go.uuid"
-	"github.com/ubombi/timeseries/storage"
+	"github.com/ubombi/timeseries/api"
 )
 
-// event is internal representation of storage.Event used to Insert data into clickhouse
+// event is internal representation of api.Event used to Insert data into clickhouse
 //
 // Untyped params grouped by their type and saved as `Nested` type.
 type event struct {
@@ -23,7 +23,7 @@ type event struct {
 }
 
 // convertToInternal converts Event to internal representation that can be used in clickhouse queries. Depends on actual table schema.
-func convertToInternal(se storage.Event) (e event) {
+func convertToInternal(se api.Event) (e event) {
 	e.EventType = se.Type
 	e.Ts = se.Ts
 

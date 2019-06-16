@@ -3,12 +3,12 @@ package http
 import (
 	"encoding/json"
 
-	"github.com/ubombi/timeseries/storage"
+	"github.com/ubombi/timeseries/api"
 	"github.com/valyala/fasthttp"
 )
 
 type Service struct {
-	Storage storage.Interface
+	Storage api.Storage
 }
 
 func (s *Service) HandlerFunc(ctx *fasthttp.RequestCtx) {
@@ -27,8 +27,7 @@ func (s *Service) HandlerFunc(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// TODO: validation here
-	err := s.Storage.Store(storage.Event{
+	err := s.Storage.Store(api.Event{
 		Type:   e.EventType,
 		Ts:     e.Ts,
 		Params: e.Params,

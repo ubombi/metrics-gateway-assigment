@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ubombi/timeseries/storage"
+	"github.com/ubombi/timeseries/api"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttputil"
 )
@@ -42,7 +42,7 @@ type testStorage struct {
 	err    error
 }
 
-func (ts *testStorage) Store(e storage.Event) error {
+func (ts *testStorage) Store(e api.Event) error {
 	ts.called += 1
 	return ts.err
 }
