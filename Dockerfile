@@ -2,7 +2,7 @@ FROM golang:1.12-alpine AS build
 LABEL maintainer="Vitalii Kozlovskyi <ubombi@gmail.com>"
 
 # to update dependencies run `docker build --no-cache .`
-RUN apk add --no-cache git ca-certificates
+RUN apk add --no-cache git ca-certificates tzdata
 
 WORKDIR /src/
 ENV GOBIN=/bin
@@ -18,10 +18,11 @@ RUN go mod download
 COPY . ./
 RUN go build -ldflags "-extldflags '-static'" -tags netgo -o /bin/server
 
-
 ### Main stage
 FROM scratch
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=build /usr/share/zoneinfo /usr/share/zoneinfo
+
 COPY --from=build /bin/server /bin/server
 EXPOSE 8008
 ENTRYPOINT ["server"]
